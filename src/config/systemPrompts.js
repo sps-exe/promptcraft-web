@@ -218,8 +218,8 @@ export const DETERMINISTIC_LOCKS = {
     writing: "Organize the output clearly. Do not exceed the specified word count.",
     image: "Provide only the final optimized image prompt as plain text. Do not include explanations.",
     email: "Provide only the rewritten email. Do not include commentary.",
-    analytical: "If required information is missing, request clarification instead of fabricating details.",
-    chat: "If required information is missing, request clarification instead of fabricating details.",
+    analytical: null,
+    chat: null,
     video: "Provide only the final optimized video prompt as plain text. Do not include explanations.",
     persona: "Provide only the final optimized prompt structure. Do not break character."
 };
