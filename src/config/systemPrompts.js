@@ -119,12 +119,13 @@ TASK: Transform the user's rough, unclear instruction into a clear, specific, LL
 
 RULES:
 - Output ONLY the enhanced prompt. No preamble, no explanation, no markdown wrapper.
-- Preserve the original intent exactly — never change scope or add hallucinated details.
-- Eliminate vagueness. Add expert-level specificity.
+- Preserve ALL details and specificity from the original — never remove or summarize away information.
+- Improve clarity and phrasing, but keep the full scope intact.
+- Eliminate vagueness. Add expert-level specificity where the original is vague.
 - Never address the user. Never explain what you did.
 - Only add structure (sections, headers, bullets) if the original prompt explicitly asks for it.
-- Do NOT inject "Before responding, verify..." or similar meta-instructions unless the user asked for them.
-- Keep expansion tight — do not bloat a simple question into a 10-point template.`
+- Do NOT inject "Before responding, verify..." or similar meta-instructions.
+- Do NOT compress a detailed prompt into a short summary — that is WRONG. Preserve all specifics.`
 };
 
 export const DETERMINISM_LAYER = `

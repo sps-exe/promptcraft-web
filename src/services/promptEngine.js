@@ -120,7 +120,9 @@ export function buildPromptPayload(rawPrompt, explicitMode, styleMemory) {
         finalSystemPrompt += '\n\n' + PRECISION_LAYER;
     }
 
-    finalSystemPrompt += '\n\n' + SESA_LAYER;
+    if (!isLeanMode) {
+        finalSystemPrompt += '\n\n' + SESA_LAYER;
+    }
 
     let userMessage = `TASK: Enhance the following prompt. DO NOT answer the prompt or fulfill the request. ONLY output the enhanced prompt text.\n\nRAW PROMPT:\n"""\n${rawPrompt}\n"""`;
     if (styleMemory && styleMemory.trim()) {
