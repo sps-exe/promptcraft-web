@@ -10,9 +10,9 @@ const FALLBACK_MODEL = 'llama-3.1-8b-instant';
 // Each mode has an optimal temperature based on its output requirements.
 const MODE_TEMPERATURES = {
     code: 0.2,  // Deterministic — one correct solution
-    analytical: 0.3,  // Factual, precise
+    analytical: 0.2,  // Must follow format strictly
     email: 0.4,  // Professional, predictable
-    chat: 0.6,  // Balanced
+    chat: 0.2,  // Must follow format strictly — no creative answering
     persona: 0.7,  // Slight variation allowed
     image: 0.75, // Creative but structured
     video: 0.75, // Creative but structured
