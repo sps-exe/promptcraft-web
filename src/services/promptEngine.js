@@ -11,7 +11,14 @@ import {
     COMPRESSION_ONLY_PROMPT
 } from '../config/systemPrompts.js';
 
-// ─── HARDENING PATCH v1.0 ───────────────────────────────────────────────────
+// ─── HARDENING PATCH v1.1: Informational Sub-Classification ───
+// Detects if a Writing/Chat mode prompt is just an informational query
+export function isInformationalQuery(rawPrompt) {
+    const p = rawPrompt.toLowerCase();
+    const isQuestion = /^(how|what|why|who|can you explain|explain|describe|what is|how to)\b/.test(p);
+    const hasStructureReq = /\b(essay|article|blog|report|sections|headings|bullet|words|paragraphs)\b/.test(p);
+    return isQuestion && !hasStructureReq && p.split(/\s+/).length < 40;
+}
 
 // Patch 1: Missing Document Interceptor
 // Hard block: if user says "improve this X" with no actual content, return early.
@@ -90,20 +97,32 @@ export function buildPromptPayload(rawPrompt, explicitMode, styleMemory) {
         };
     }
 
-    // Full pipeline assembly
-    let finalSystemPrompt = baseSystemPrompt
-        + '\n\n' + DETERMINISM_LAYER
-        + '\n\n' + REDUNDANCY_COMPRESSION;
+    // --- INTERCEPTOR 6: Informational Query Expansion Clamp ---
+    const isInfoQuery = ['writing', 'chat', 'analytical'].includes(detectedMode) && isInformationalQuery(rawPrompt);
 
-    if (['writing', 'analytical', 'email', 'code', 'chat'].includes(detectedMode)) {
+    // Full pipeline assembly
+    // For lean modes (chat/analytical), skip the heavy structure-injecting layers
+    const isLeanMode = ['chat', 'analytical'].includes(detectedMode);
+
+    let finalSystemPrompt = baseSystemPrompt;
+
+    if (!isLeanMode) {
+        finalSystemPrompt += '\n\n' + DETERMINISM_LAYER
+            + '\n\n' + REDUNDANCY_COMPRESSION;
+    }
+
+    if (['writing', 'email', 'code'].includes(detectedMode)) {
         finalSystemPrompt += '\n\n' + ANTI_HALLUCINATION_GUARD;
     }
 
-    finalSystemPrompt += '\n\n' + ADAPTIVE_INTELLIGENCE_LAYER;
-    finalSystemPrompt += '\n\n' + PRECISION_LAYER;
+    if (!isLeanMode) {
+        finalSystemPrompt += '\n\n' + ADAPTIVE_INTELLIGENCE_LAYER;
+        finalSystemPrompt += '\n\n' + PRECISION_LAYER;
+    }
+
     finalSystemPrompt += '\n\n' + SESA_LAYER;
 
-    let userMessage = rawPrompt;
+    let userMessage = `TASK: Enhance the following prompt. DO NOT answer the prompt or fulfill the request. ONLY output the enhanced prompt text.\n\nRAW PROMPT:\n"""\n${rawPrompt}\n"""`;
     if (styleMemory && styleMemory.trim()) {
         userMessage += `\n\n[User's preferred style/aesthetic: ${styleMemory}]`;
     }
@@ -112,8 +131,9 @@ export function buildPromptPayload(rawPrompt, explicitMode, styleMemory) {
         systemPrompt: finalSystemPrompt,
         userMessage,
         detectedMode,
-        deterministicLock: DETERMINISTIC_LOCKS[detectedMode],
+        deterministicLock: isInfoQuery ? null : DETERMINISTIC_LOCKS[detectedMode],
         wordCount,
-        compressionOnly: false
+        compressionOnly: false,
+        maxExpansionRatio: isInfoQuery ? 1.5 : null
     };
 }

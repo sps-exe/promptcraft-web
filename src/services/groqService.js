@@ -57,10 +57,13 @@ function applySMPCap(text, originalWordCount) {
 }
 
 // ── Hardening: Token Inflation Guard ──────────────────────────────────────
-async function enforceTokenInflationGuard(text, client, originalWordCount) {
-    if (originalWordCount >= 10) return text;
+async function enforceTokenInflationGuard(text, client, originalWordCount, maxExpansionRatio) {
+    if (originalWordCount >= 10 && !maxExpansionRatio) return text;
+
     const outputWords = text.trim().split(/\s+/).length;
-    const maxAllowed = originalWordCount * 15;
+    // Default cap is 15x. If maxExpansionRatio is set (e.g. 1.5 for informational), use that.
+    const maxAllowed = Math.floor(originalWordCount * (maxExpansionRatio || 15));
+
     if (outputWords <= maxAllowed) return text;
     try {
         const compressionResponse = await client.chat.completions.create({
@@ -102,7 +105,7 @@ export async function enhancePrompt(rawPrompt, mode, styleMemory, apiKey, onChun
         };
     }
 
-    const { systemPrompt, userMessage, detectedMode, deterministicLock, wordCount } = payload;
+    const { systemPrompt, userMessage, detectedMode, deterministicLock, wordCount, maxExpansionRatio } = payload;
     const originalWordCount = wordCount || rawPrompt.trim().split(/\s+/).length;
     const temperature = MODE_TEMPERATURES[detectedMode] ?? 0.7;
 
@@ -163,9 +166,10 @@ export async function enhancePrompt(rawPrompt, mode, styleMemory, apiKey, onChun
         result = result.trim();
 
         // Post-processing pipeline
+        result = result.replace(/^(\*?\*?(Here is the )?enhanced prompt\*?\*?:?)\s*/i, '').trim();
         result = stripImageHeaders(result, detectedMode);          // #2
         result = applySMPCap(result, originalWordCount);           // Hardening
-        result = await enforceTokenInflationGuard(result, client, originalWordCount); // Hardening
+        result = await enforceTokenInflationGuard(result, client, originalWordCount, maxExpansionRatio); // Hardening
 
         // Append deterministic lock only if not already present
         if (deterministicLock && !result.includes(deterministicLock.slice(0, 30))) {
